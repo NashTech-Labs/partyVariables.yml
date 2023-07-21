@@ -1,0 +1,72 @@
+parameters:
+- name: appDeploymentTarget
+  type: string
+  
+- name: key
+  type: string
+
+- name: enablepartyVariables
+  type: boolean
+  default: true  
+  
+steps:
+- ${{ if and(eq(parameters.appDeploymentTarget, 'AppService'), eq(parameters.key, 'Wcf-AppServiceMatrix')) }}:
+  - pwsh: |
+      "##vso[task.setvariable variable=Wcf.appServiceNames]$(party.wcf.webAppName)"
+    name: SetAppServiceList
+    displayName: Set App Service List
+
+- ${{ if and(eq(parameters.appDeploymentTarget, 'AppService'), eq(parameters.key, 'Wcf')) }}:
+  - pwsh: |
+      "##vso[task.setvariable variable=Wcf.archivePattern]party.wcf.$(build.configVersion).*"
+      "##vso[task.setvariable variable=Wcf.extractFolder]$(build.configVersion)/party.wcf"
+      "##vso[task.setvariable variable=Wcf.packageFolder]AFS.Party.WCF"
+      "##vso[task.setvariable variable=Wcf.packageId]party.wcf"
+      "##vso[task.setvariable variable=Wcf.pacakgeVersion]$(build.configVersion)"
+    name: SetAppServiceDeploymentVariables
+    displayName: Set App Service Deployment Variables
+
+- ${{ if and(eq(parameters.appDeploymentTarget, 'AKS'), eq(parameters.key, 'Wcf-ImportImage')) }}:
+  - pwsh: |
+      "##vso[task.setvariable variable=Wcf.targetContainerRegistry]$(environment.containerRegistry)"
+      "##vso[task.setvariable variable=Wcf.sourceImage]$(environment.sourceContainerRegistry).azurecr.io/party:v$(build.configVersion)"
+      "##vso[task.setvariable variable=Wcf.targetImage]party:v$(build.configVersion)"
+      "##vso[task.setvariable variable=Wcf.sourceContainerRegistry.SPUserName]$(environment.sourceContainerRegistry.servicePrincipalApplicationId)"
+      "##vso[task.setvariable variable=Wcf.sourceContainerRegistry.SPPassword]$(environment.sourceContainerRegistry.servicePrincipalClientAuth)"
+    name: SetImportImageVariables
+    displayName: Set Import Image Variables
+
+- ${{ if and(eq(parameters.appDeploymentTarget, 'AKS'), eq(parameters.key, 'Wcf-DeploymentMatrix')) }}:
+  - pwsh: |
+      "##vso[task.setvariable variable=Wcf.aksApps]party-$(party.blueGreenEnv)"
+      "##vso[task.setvariable variable=Wcf.aksAppsForBlueGreen]party-{deploymentSlot}"
+      "##vso[task.setvariable variable=Wcf.workloadName]party"
+    name: SetAKSAppDeploymentList
+    displayName: Set AKS App Deployment List
+
+- ${{ if and(eq(parameters.appDeploymentTarget, 'AKS'), eq(parameters.key, 'Wcf')) }}:
+  - pwsh: |
+      "##vso[task.setvariable variable=Wcf.containerRegistry]$(environment.containerRegistry).azurecr.io"
+      "##vso[task.setvariable variable=Wcf.image]$(environment.containerRegistry).azurecr.io/party:v$(build.configVersion)"
+      "##vso[task.setvariable variable=Wcf.workloadName]party"
+    name: SetAKSDeploymentVariables
+    displayName: Set AKS Deployment Variables
+
+- ${{ if eq(parameters.key, 'APIManagementMatrix') }}:
+  - pwsh: |
+      "##vso[task.setvariable variable=APIM.instanceNames]$(environment.apiManagement.serviceNames)"
+    name: SetAPIManagementList
+    displayName: Set API Management List
+
+- ${{ if eq(parameters.key, 'APIM') }}:
+  - pwsh: |
+      "##vso[task.setvariable variable=APIM.archivePattern]party.apispecification.$(build.configVersion).*"
+      "##vso[task.setvariable variable=APIM.extractFolder]$(build.configVersion)/party.apispecification"
+      "##vso[task.setvariable variable=APIM.apiId]$(party.apiManagement.name)"
+      "##vso[task.setvariable variable=APIM.apiPath]party"
+      "##vso[task.setvariable variable=APIM.name]Party API"
+      "##vso[task.setvariable variable=APIM.description]API for Party operations."
+      "##vso[task.setvariable variable=APIM.packageId]party.apispecification"
+      "##vso[task.setvariable variable=APIM.pacakgeVersion]$(build.configVersion)"
+    name: SetAPIMDeploymentVariables
+    displayName: Set APIM Deployment Variables
